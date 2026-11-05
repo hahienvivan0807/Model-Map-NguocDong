@@ -1834,8 +1834,10 @@ ${howBullets}
           id: r.id,
           x: rCenter.x,
           y: rCenter.y,
-          r: Math.max(22, Math.min(r.width, r.depth) * cam.zoom * 0.45),
-          depth: rCenter.depth - 5
+          hw: rw / 2 + 8,
+          hh: 14,
+          r: Math.max(24, rw * 0.45),
+          depth: rCenter.depth + 25
         });
       }
     }
@@ -2086,14 +2088,77 @@ ${howBullets}
     let dragButton = 0;
     let dragStartX = 0, dragStartY = 0;
     let movedDistance = 0;
+    let dragOffsetX = 0, dragOffsetZ = 0;
 
     function hitTestScreen(mx, my) {
+      const g = screenToGround(mx, my);
+
+      // 1. Ưu tiên kiểm tra nếu người dùng đang chọn sẵn 1 con đường/nhà và click trực tiếp lên bề mặt của nó
+      const currentObj = getSelectedObject();
+      if (currentObj && (selectedKind === "road" || selectedKind === "building")) {
+        const pad = selectedKind === "road" ? (currentObj.sidewalkWidth || 1.4) : 0.6;
+        if (
+          Math.abs(g.x - currentObj.x) <= currentObj.width / 2 + pad &&
+          Math.abs(g.z - currentObj.z) <= currentObj.depth / 2 + pad
+        ) {
+          // Kiểm tra xem có click trúng nhãn/khối nhà nào nằm đè phía trước không
+          const sortedTop = [...clickableRegions].sort((a, b) => b.depth - a.depth);
+          for (const reg of sortedTop) {
+            if (reg.hw && reg.hh) {
+              if (Math.abs(mx - reg.x) <= reg.hw && Math.abs(my - reg.y) <= reg.hh) return reg;
+            }
+          }
+          return { kind: selectedKind, id: currentObj.id };
+        }
+      }
+
+      // 2. Kiểm tra các nhãn tên đường (hình chữ nhật) và khối công trình 3D trên màn hình
       const sorted = [...clickableRegions].sort((a, b) => b.depth - a.depth);
       for (const reg of sorted) {
-        if (Math.hypot(mx - reg.x, my - reg.y) <= reg.r) {
+        if (reg.hw && reg.hh) {
+          if (Math.abs(mx - reg.x) <= reg.hw && Math.abs(my - reg.y) <= reg.hh) {
+            return reg;
+          }
+        } else if (Math.hypot(mx - reg.x, my - reg.y) <= reg.r) {
           return reg;
         }
       }
+
+      // 3. Kiểm tra bề mặt mặt đất của từng Ô Nhà (Building footprint)
+      for (const b of DATA.buildings) {
+        if (
+          Math.abs(g.x - b.x) <= b.width / 2 + 0.5 &&
+          Math.abs(g.z - b.z) <= b.depth / 2 + 0.5
+        ) {
+          return { kind: "building", id: b.id };
+        }
+      }
+
+      // 4. Kiểm tra toàn bộ chiều dài mặt đường & vỉa hè của các Tuyến Đường (Road footprint)
+      // Ưu tiên đường nhánh nhỏ trước nếu giao nhau tại ngã tư
+      const roadsByArea = [...DATA.roads].sort((a, b) => (a.width * a.depth) - (b.width * b.depth));
+      for (const r of roadsByArea) {
+        const pad = r.hasSidewalk ? (r.sidewalkWidth || 1.4) : 0.8;
+        if (
+          Math.abs(g.x - r.x) <= r.width / 2 + pad &&
+          Math.abs(g.z - r.z) <= r.depth / 2 + pad
+        ) {
+          return { kind: "road", id: r.id };
+        }
+      }
+
+      // 5. Nếu đang ở tab Khu vực (Zones), cho phép click & kéo cả Khu vực
+      if (leftTab === "zones" || selectedKind === "zone") {
+        for (const z of DATA.zones) {
+          if (
+            Math.abs(g.x - z.x) <= z.width / 2 &&
+            Math.abs(g.z - z.z) <= z.depth / 2
+          ) {
+            return { kind: "zone", id: z.id };
+          }
+        }
+      }
+
       return null;
     }
 
@@ -2128,7 +2193,16 @@ ${howBullets}
         const hit = hitTestScreen(mx, my);
         if (hit) {
           selectItem(hit.kind, hit.id, false);
-          pushHistorySnapshot("Kéo di chuyển ô");
+          const obj = getSelectedObject();
+          const g = screenToGround(mx, my);
+          if (obj) {
+            dragOffsetX = obj.x - g.x;
+            dragOffsetZ = obj.z - g.z;
+          } else {
+            dragOffsetX = 0;
+            dragOffsetZ = 0;
+          }
+          pushHistorySnapshot("Kéo di chuyển " + (hit.kind === "road" ? "đường" : "ô"));
           isDraggingObject = true;
         }
       }
@@ -2147,9 +2221,10 @@ ${howBullets}
         if (obj) {
           const rect = canvas.getBoundingClientRect();
           const g = screenToGround(e.clientX - rect.left, e.clientY - rect.top);
-          obj.x = g.x;
-          obj.z = g.z;
+          obj.x = Math.round((g.x + dragOffsetX) * 2) / 2;
+          obj.z = Math.round((g.z + dragOffsetZ) * 2) / 2;
           saveMapData();
+          renderLeftList();
           updateInspector();
         }
         return;

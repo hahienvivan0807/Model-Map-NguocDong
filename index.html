@@ -1,0 +1,2118 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bản Đồ Quy Hoạch 3D Chương 1 — Game "Xóm Trọ" (v0.2)</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #1e293b;
+      --panel-hover: #334155;
+      --border: #334155;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --emerald: #10b981;
+      --amber: #f59e0b;
+      --rose: #f43f5e;
+      --purple: #a855f7;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header gọn gàng */
+    header {
+      min-height: 48px;
+      background: #0b1120;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 4px 12px;
+      gap: 8px;
+      flex-shrink: 0;
+      z-index: 20;
+      flex-wrap: wrap;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .brand-badge {
+      background: linear-gradient(135deg, #f59e0b, #ef4444);
+      color: #fff;
+      font-weight: 800;
+      font-size: 12px;
+      padding: 3px 8px;
+      border-radius: 6px;
+    }
+    .brand h1 {
+      font-size: 14px;
+      font-weight: 700;
+      color: #f8fafc;
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      flex-wrap: wrap;
+    }
+    .btn {
+      background: var(--panel);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 5px 9px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .btn:hover { background: var(--panel-hover); border-color: #475569; }
+    .btn.active {
+      background: #0284c7;
+      border-color: #38bdf8;
+      color: #fff;
+    }
+    .btn.primary {
+      background: linear-gradient(135deg, #059669, #10b981);
+      border-color: #34d399;
+      color: #fff;
+    }
+    .btn.amber {
+      background: linear-gradient(135deg, #d97706, #f59e0b);
+      border-color: #fbbf24;
+      color: #fff;
+    }
+    .btn.purple {
+      background: linear-gradient(135deg, #7c3aed, #9333ea);
+      border-color: #c084fc;
+      color: #fff;
+    }
+    .btn.danger {
+      background: rgba(244, 63, 94, 0.15);
+      border-color: #f43f5e;
+      color: #fda4af;
+    }
+    .btn.danger:hover {
+      background: #e11d48;
+      color: #fff;
+    }
+    .btn.fullscreen-toggle {
+      background: #0369a1;
+      border-color: #38bdf8;
+      color: #fef08a;
+      font-weight: 800;
+    }
+
+    /* Main Workspace with collapsible sidebars */
+    .workspace {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Left Sidebar */
+    .sidebar-left {
+      width: 280px;
+      flex-shrink: 0;
+      background: #111827;
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transition: width 0.2s ease, opacity 0.15s ease;
+    }
+    .sidebar-left.collapsed {
+      width: 0 !important;
+      border-right: none;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .panel-collapse-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #090d16;
+      padding: 6px 10px;
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+      font-weight: 800;
+      color: #38bdf8;
+    }
+    .collapse-btn {
+      background: #1e293b;
+      color: #fde047;
+      border: 1px solid #475569;
+      border-radius: 5px;
+      padding: 3px 8px;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    .collapse-btn:hover {
+      background: #0284c7;
+      color: #fff;
+      border-color: #38bdf8;
+    }
+
+    .left-tabs {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      background: #0b1120;
+      border-bottom: 1px solid var(--border);
+      padding: 5px;
+      gap: 4px;
+    }
+    .left-tab {
+      font-size: 12px;
+      font-weight: 700;
+      padding: 5px 4px;
+      border-radius: 6px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      text-align: center;
+    }
+    .left-tab.active {
+      background: var(--panel);
+      color: #38bdf8;
+      border-color: #38bdf8;
+    }
+
+    .zone-filter-bar {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 4px;
+      padding: 6px 8px;
+      border-bottom: 1px solid var(--border);
+      background: #0f172a;
+    }
+    .zone-chip {
+      font-size: 12px;
+      font-weight: 700;
+      padding: 4px 5px;
+      border-radius: 5px;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      color: var(--text);
+      cursor: pointer;
+      text-align: center;
+    }
+    .zone-chip.active { outline: 2px solid #fff; }
+
+    .building-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 7px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .b-item {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--accent);
+      border-radius: 7px;
+      padding: 7px 9px;
+      cursor: pointer;
+    }
+    .b-item:hover { background: var(--panel-hover); }
+    .b-item.selected {
+      background: #1e3a5f;
+      border-color: #38bdf8;
+      box-shadow: 0 0 0 1px #38bdf8;
+    }
+    .b-item-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 4px;
+      margin-bottom: 2px;
+    }
+    .b-code {
+      font-size: 12px;
+      font-weight: 800;
+      padding: 1px 5px;
+      border-radius: 4px;
+      background: rgba(255,255,255,0.14);
+      color: #fff;
+    }
+    .b-size {
+      font-size: 12px;
+      color: #cbd5e1;
+      font-family: Consolas, monospace;
+    }
+    .b-lot-label {
+      font-size: 12px;
+      font-weight: 800;
+      color: #fde047;
+    }
+    .b-name {
+      font-size: 12px;
+      color: #e2e8f0;
+      line-height: 1.25;
+    }
+
+    /* Center Viewport */
+    .viewport-wrap {
+      flex: 1;
+      position: relative;
+      background: #090d16;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    #mapCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      cursor: grab;
+    }
+    #mapCanvas:active { cursor: grabbing; }
+
+    /* Nút nổi dễ thấy ở sát mép Trái / Phải để Mở/Thu gọn bảng bất kỳ lúc nào */
+    .edge-drawer-btn {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 15;
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      color: #fff;
+      border: 2px solid #38bdf8;
+      padding: 10px 8px;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.6);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: 0.15s;
+    }
+    .edge-drawer-btn:hover {
+      background: #0369a1;
+      border-color: #fde047;
+      color: #fde047;
+    }
+    .edge-drawer-btn.left {
+      left: 0;
+      border-radius: 0 8px 8px 0;
+      border-left: none;
+    }
+    .edge-drawer-btn.right {
+      right: 0;
+      border-radius: 8px 0 0 8px;
+      border-right: none;
+    }
+
+    /* Floating Top-Left: Nút Hướng dẫn thu gọn */
+    .hud-top-left {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      z-index: 12;
+      pointer-events: none;
+    }
+    .hud-pill-btn {
+      pointer-events: auto;
+      background: rgba(15, 23, 42, 0.92);
+      color: #38bdf8;
+      border: 1px solid #38bdf8;
+      border-radius: 8px;
+      padding: 6px 11px;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.45);
+      width: fit-content;
+    }
+    .hud-pill-btn:hover {
+      background: #1e293b;
+      color: #fde047;
+      border-color: #fde047;
+    }
+    .hud-card {
+      background: rgba(15, 23, 42, 0.94);
+      backdrop-filter: blur(8px);
+      border: 1px solid #38bdf8;
+      border-radius: 10px;
+      padding: 10px 12px;
+      pointer-events: auto;
+      max-width: 350px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    }
+    .hud-desc {
+      font-size: 12px;
+      color: #e2e8f0;
+      line-height: 1.45;
+    }
+
+    /* Floating Top-Right: Hộp Mở rộng nhanh (Có nút thu nhỏ/mở ra) */
+    .hud-top-right {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      align-items: flex-end;
+      z-index: 12;
+      pointer-events: none;
+    }
+    .quick-expand-bar {
+      pointer-events: auto;
+      background: rgba(15, 23, 42, 0.93);
+      border: 1px solid rgba(251, 191, 36, 0.65);
+      border-radius: 9px;
+      padding: 7px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.5);
+    }
+    .quick-expand-row {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+    .mini-btn {
+      background: #1e293b;
+      color: #f8fafc;
+      border: 1px solid #475569;
+      border-radius: 5px;
+      padding: 3px 7px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .mini-btn:hover {
+      background: #0284c7;
+      border-color: #38bdf8;
+    }
+
+    /* Bottom Legend gọn gàng */
+    .hud-bottom-bar {
+      position: absolute;
+      bottom: 8px;
+      left: 10px;
+      right: 10px;
+      display: flex;
+      justify-content: center;
+      pointer-events: none;
+      z-index: 12;
+    }
+    .legend-box {
+      background: rgba(15, 23, 42, 0.88);
+      border: 1px solid rgba(148, 163, 184, 0.28);
+      border-radius: 8px;
+      padding: 5px 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+      pointer-events: auto;
+      font-size: 12px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      cursor: pointer;
+    }
+    .legend-dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 3px;
+    }
+
+    /* Right Sidebar */
+    .sidebar-right {
+      width: 370px;
+      flex-shrink: 0;
+      background: #111827;
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transition: width 0.2s ease, opacity 0.15s ease;
+    }
+    .sidebar-right.collapsed {
+      width: 0 !important;
+      border-left: none;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .sidebar-right-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+
+    .inspector-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 10px;
+    }
+    .inspector-title {
+      font-size: 14px;
+      font-weight: 800;
+      color: #fff;
+      line-height: 1.3;
+    }
+    .badge {
+      display: inline-block;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: rgba(56, 189, 248, 0.18);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.35);
+    }
+
+    .lot-label-highlight-box {
+      background: rgba(245, 158, 11, 0.14);
+      border: 2px solid #f59e0b;
+      border-radius: 8px;
+      padding: 7px 9px;
+      margin-top: 7px;
+    }
+    .lot-label-highlight-box label {
+      display: block;
+      font-size: 12px;
+      font-weight: 800;
+      color: #fde047;
+      margin-bottom: 3px;
+    }
+    .lot-label-highlight-box input {
+      width: 100%;
+      background: #090d16;
+      border: 1px solid #fbbf24;
+      color: #fef08a;
+      font-weight: 800;
+      font-size: 13px;
+      padding: 5px 8px;
+      border-radius: 6px;
+    }
+
+    .spec-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 5px;
+      margin: 7px 0;
+    }
+    .spec-cell {
+      background: #0f172a;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 5px 6px;
+      text-align: center;
+    }
+    .spec-label {
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .spec-val {
+      font-size: 12.5px;
+      font-weight: 800;
+      color: #38bdf8;
+      font-family: Consolas, monospace;
+      margin-top: 2px;
+    }
+
+    .section-h3 {
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: #fbbf24;
+      letter-spacing: 0.03em;
+      margin-bottom: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .info-p {
+      font-size: 12px;
+      color: #e2e8f0;
+      line-height: 1.45;
+    }
+    .how-list {
+      padding-left: 15px;
+      font-size: 12px;
+      color: #cbd5e1;
+      line-height: 1.45;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .props-wrap {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 5px;
+    }
+    .prop-tag {
+      font-size: 12px;
+      background: #0f172a;
+      border: 1px solid #334155;
+      color: #bae6fd;
+      padding: 2px 6px;
+      border-radius: 5px;
+    }
+
+    .prompt-box {
+      width: 100%;
+      min-height: 115px;
+      background: #090d16;
+      color: #a7f3d0;
+      border: 1px solid #334155;
+      border-radius: 7px;
+      padding: 7px;
+      font-family: Consolas, monospace;
+      font-size: 12px;
+      line-height: 1.4;
+      resize: vertical;
+    }
+
+    .edit-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-top: 5px;
+    }
+    .edit-field label {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 2px;
+    }
+    .edit-field input {
+      width: 100%;
+      background: #0f172a;
+      border: 1px solid var(--border);
+      color: #fff;
+      padding: 4px 7px;
+      border-radius: 5px;
+      font-size: 12px;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 42px;
+      right: 20px;
+      background: #10b981;
+      color: #fff;
+      font-weight: 700;
+      font-size: 12.5px;
+      padding: 9px 15px;
+      border-radius: 8px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      opacity: 0;
+      transform: translateY(10px);
+      transition: 0.2s;
+      pointer-events: none;
+      z-index: 100;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <span class="brand-badge">CHƯƠNG 1 — XÓM TRỌ v0.2</span>
+      <h1>Bản Đồ 3D (9 Tuyến Đường • Mở Rộng Nhà/Đường • Ghi Chữ Tên Ô)</h1>
+    </div>
+
+    <div class="toolbar">
+      <button class="btn fullscreen-toggle" id="btnToggleBothPanels" onclick="toggleBothPanels()">🗖 Mở Rộng Toàn Màn Hình 3D</button>
+      <span style="color:#475569">|</span>
+      <button class="btn active" id="btnCamTurnaround" onclick="setCameraPreset('turnaround')">🎥 Góc 3D (31°)</button>
+      <button class="btn" id="btnCamTopDown" onclick="setCameraPreset('topdown')">🗺️ Sơ Đồ Phẳng</button>
+      <button class="btn" id="btnCamFollowAn" onclick="setCameraPreset('follow')">🚶‍♀️ Đi cùng An (WASD)</button>
+      <span style="color:#475569">|</span>
+      <button class="btn" id="btnMoveMode" onclick="toggleMoveDragMode()">✋ Kéo Ô: <span id="moveModeState">TẮT</span></button>
+      <button class="btn purple" id="btnAddMarkerMode" onclick="togglePinLabelMode()">🏷️ Ghim Chữ</button>
+      <button class="btn primary" onclick="addNewCustomBuilding()">➕ Thêm Nhà</button>
+      <button class="btn amber" onclick="addNewRoadSegment()">🛣️ Thêm Đường</button>
+      <button class="btn" onclick="resetToDefaultMap()" title="Khôi phục bản đồ gốc">🔄 Mặc định</button>
+    </div>
+  </header>
+
+  <div class="workspace">
+    <!-- LEFT SIDEBAR -->
+    <aside class="sidebar-left" id="leftSidebar">
+      <div class="panel-collapse-header">
+        <span>📋 DANH SÁCH NHÀ & ĐƯỜNG</span>
+        <button class="collapse-btn" onclick="toggleLeftSidebar()">◀ Thu nhỏ cột trái</button>
+      </div>
+
+      <div class="left-tabs">
+        <button class="left-tab active" id="tabBtnBuildings" onclick="switchLeftTab('buildings')">🏠 Nhà (<span id="countB">16</span>)</button>
+        <button class="left-tab" id="tabBtnRoads" onclick="switchLeftTab('roads')">🛣️ Đường (<span id="countR">9</span>)</button>
+        <button class="left-tab" id="tabBtnZones" onclick="switchLeftTab('zones')">🗺️ 5 Khu (<span id="countZ">5</span>)</button>
+      </div>
+
+      <div class="zone-filter-bar" id="zoneFilterBar">
+        <button class="zone-chip active" data-zone="ALL" onclick="filterZone('ALL')">Tất cả</button>
+        <button class="zone-chip" style="border-color:#f59e0b;color:#fbbf24" data-zone="zone_night_market" onclick="filterZone('zone_night_market')">A. Chợ Đêm</button>
+        <button class="zone-chip" style="border-color:#10b981;color:#34d399" data-zone="zone_boarding_house" onclick="filterZone('zone_boarding_house')">B. Nhà Trọ</button>
+        <button class="zone-chip" style="border-color:#ec4899;color:#f472b6" data-zone="zone_motel_hotel" onclick="filterZone('zone_motel_hotel')">C. Nhà Nghỉ</button>
+        <button class="zone-chip" style="border-color:#ef4444;color:#f87171" data-zone="zone_hem51_food" onclick="filterZone('zone_hem51_food')">D. Hẻm 51</button>
+        <button class="zone-chip" style="border-color:#3b82f6;color:#60a5fa" data-zone="zone_big_companies" onclick="filterZone('zone_big_companies')">E. Công Ty</button>
+      </div>
+
+      <div class="building-list" id="leftListContainer"></div>
+    </aside>
+
+    <!-- CENTER 3D VIEWPORT -->
+    <main class="viewport-wrap">
+      <canvas id="mapCanvas"></canvas>
+
+      <!-- Nút nổi sát mép Trái/Phải khi cột bị thu nhỏ (hoặc bấm nhanh để đóng/mở) -->
+      <button class="edge-drawer-btn left" id="edgeLeftBtn" onclick="toggleLeftSidebar()" title="Đóng / Mở bảng Danh sách bên trái">
+        <span id="edgeLeftIcon">◀ Thu gọn DS</span>
+      </button>
+
+      <button class="edge-drawer-btn right" id="edgeRightBtn" onclick="toggleRightSidebar()" title="Đóng / Mở bảng Chi tiết & Prompt bên phải">
+        <span id="edgeRightIcon">Thu gọn Chi tiết ▶</span>
+      </button>
+
+      <!-- Góc trên trái: Nút Hướng dẫn gọn gàng (Mặc định thu nhỏ để không che bản đồ) -->
+      <div class="hud-top-left">
+        <button class="hud-pill-btn" onclick="toggleHelpCard()">
+          <span id="helpBtnText">❓ Mở Hướng Dẫn Thao Tác</span>
+        </button>
+        <div class="hud-card" id="helpCardBox" style="display:none">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+            <span style="font-size:12px;font-weight:800;color:#38bdf8">💡 HƯỚNG DẪN THAO TÁC NHANH</span>
+            <button class="mini-btn" onclick="toggleHelpCard()">✖ Đóng</button>
+          </div>
+          <div class="hud-desc">
+            • <b>Click trái vào Nhà / Đường</b>: Chọn để mở rộng hoặc đổi tên<br/>
+            • <b>Nhấp đúp (Double-Click) vào Ô</b>: Sửa ngay <b>Chữ Tên Ô</b><br/>
+            • <b>Bật "✋ Kéo Ô"</b>: Kéo thả ngôi nhà/con đường tới vị trí mới<br/>
+            • <b>Kéo chuột trái</b>: Xoay 3D • <b>Kéo chuột phải (hoặc Shift+Kéo)</b>: Trượt bản đồ
+          </div>
+        </div>
+      </div>
+
+      <!-- Góc trên phải: Hộp công cụ Mở rộng nhanh (Có nút thu nhỏ/mở ra) -->
+      <div class="hud-top-right">
+        <button class="hud-pill-btn" id="quickExpandCollapsedBtn" style="display:none;border-color:#fbbf24;color:#fde047" onclick="toggleQuickExpandBar()">
+          ➕ Mở Thanh Chỉnh Kích Thước Nhanh
+        </button>
+
+        <div class="quick-expand-bar" id="quickExpandFullBar">
+          <div style="font-size:12px;font-weight:800;color:#fde047;display:flex;justify-content:space-between;align-items:center;gap:8px">
+            <span id="quickBarTargetName">🏠 DÃY TRỌ CỦA AN</span>
+            <div style="display:flex;gap:4px">
+              <button class="mini-btn" style="background:#059669;border-color:#34d399" onclick="promptQuickRename()">✏️ Đổi Tên Ô</button>
+              <button class="mini-btn" style="background:#334155;color:#fde047" onclick="toggleQuickExpandBar()" title="Thu nhỏ hộp này">➖ Thu nhỏ</button>
+            </div>
+          </div>
+          <div class="quick-expand-row">
+            <span style="font-size:12px;color:#94a3b8;width:68px">Ngang (X):</span>
+            <button class="mini-btn" onclick="quickResizeSelected(-2, 0, 0)">-2m</button>
+            <button class="mini-btn" onclick="quickResizeSelected(-0.5, 0, 0)">-0.5m</button>
+            <button class="mini-btn" onclick="quickResizeSelected(0.5, 0, 0)">+0.5m</button>
+            <button class="mini-btn" onclick="quickResizeSelected(2, 0, 0)">+2m (Mở rộng)</button>
+          </div>
+          <div class="quick-expand-row">
+            <span style="font-size:12px;color:#94a3b8;width:68px">Sâu/Dài (Z):</span>
+            <button class="mini-btn" onclick="quickResizeSelected(0, -2, 0)">-2m</button>
+            <button class="mini-btn" onclick="quickResizeSelected(0, -0.5, 0)">-0.5m</button>
+            <button class="mini-btn" onclick="quickResizeSelected(0, 0.5, 0)">+0.5m</button>
+            <button class="mini-btn" onclick="quickResizeSelected(0, 2, 0)">+2m (Kéo dài)</button>
+          </div>
+          <div class="quick-expand-row" id="quickHeightRow">
+            <span style="font-size:12px;color:#94a3b8;width:68px">Độ cao (Y):</span>
+            <button class="mini-btn" onclick="quickResizeSelected(0, 0, -3.2)">-1 Tầng</button>
+            <button class="mini-btn" onclick="quickResizeSelected(0, 0, -0.5)">-0.5m</button>
+            <button class="mini-btn" onclick="quickResizeSelected(0, 0, 0.5)">+0.5m</button>
+            <button class="mini-btn" onclick="quickResizeSelected(0, 0, 3.2)">+1 Tầng</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="hud-bottom-bar">
+        <div class="legend-box">
+          <div class="legend-item" onclick="focusZone('zone_night_market')">
+            <span class="legend-dot" style="background:#f59e0b"></span>
+            <span><b>Khu A:</b> Chợ Đêm</span>
+          </div>
+          <div class="legend-item" onclick="focusZone('zone_boarding_house')">
+            <span class="legend-dot" style="background:#10b981"></span>
+            <span><b>Khu B:</b> Nhà Trọ</span>
+          </div>
+          <div class="legend-item" onclick="focusZone('zone_motel_hotel')">
+            <span class="legend-dot" style="background:#ec4899"></span>
+            <span><b>Khu C:</b> Nhà Nghỉ</span>
+          </div>
+          <div class="legend-item" onclick="focusZone('zone_hem51_food')">
+            <span class="legend-dot" style="background:#ef4444"></span>
+            <span><b>Khu D:</b> Hẻm 51</span>
+          </div>
+          <div class="legend-item" onclick="focusZone('zone_big_companies')">
+            <span class="legend-dot" style="background:#3b82f6"></span>
+            <span><b>Khu E:</b> Công Ty</span>
+          </div>
+          <span style="color:#475569">|</span>
+          <div class="legend-item" onclick="switchLeftTab('roads'); if(leftCollapsed) toggleLeftSidebar();">
+            <span class="legend-dot" style="background:#94a3b8;border:1px solid #fbbf24"></span>
+            <span><b>9 Tuyến Đường & Hẻm</b></span>
+          </div>
+          <span style="color:#475569">|</span>
+          <div class="legend-item" onclick="cycleTimeOfDay()">
+            <span>🌇 Buổi: <b id="timeLabel" style="color:#fde047">Chiều Hoàng Hôn</b></span>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- RIGHT SIDEBAR: INSPECTOR -->
+    <aside class="sidebar-right" id="rightSidebar">
+      <div class="panel-collapse-header">
+        <span>🛠️ CHI TIẾT Ô & PROMPT BLENDER</span>
+        <button class="collapse-btn" onclick="toggleRightSidebar()">Thu nhỏ cột phải ▶</button>
+      </div>
+
+      <div class="sidebar-right-body">
+        <div class="inspector-card">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:6px">
+            <span class="badge" id="inspZoneBadge">KHU B — KHU NHÀ TRỌ</span>
+            <div style="display:flex;gap:4px">
+              <button class="btn" style="padding:2px 7px" onclick="duplicateSelectedItem()">📑 Nhân bản</button>
+              <button class="btn danger" style="padding:2px 7px" onclick="deleteSelectedItem()">🗑️ Xóa</button>
+            </div>
+          </div>
+          <h2 class="inspector-title" id="inspName" style="margin-top:5px">Đang tải...</h2>
+
+          <div class="lot-label-highlight-box">
+            <label for="inputLotLabel">🏷️ CHỮ GHI TÊN Ô ĐẤT (Để biết xây gì ở ô này):</label>
+            <input type="text" id="inputLotLabel" placeholder="Nhập tên ô..." oninput="updateSelectedFromInputs()" />
+          </div>
+
+          <div class="spec-grid">
+            <div class="spec-cell">
+              <div class="spec-label">Rộng Ngang (X)</div>
+              <div class="spec-val" id="inspWidth">0m</div>
+            </div>
+            <div class="spec-cell">
+              <div class="spec-label">Sâu / Dài (Z)</div>
+              <div class="spec-val" id="inspDepth">0m</div>
+            </div>
+            <div class="spec-cell">
+              <div class="spec-label">Chiều Cao (Y)</div>
+              <div class="spec-val" id="inspHeight">0m</div>
+            </div>
+          </div>
+
+          <div style="font-size:12px;color:#94a3b8;display:flex;justify-content:space-between">
+            <span>📍 Tâm: <b style="color:#fff" id="inspCoord">(0, 0)</b></span>
+            <span>🧍‍♀️ Tỉ lệ An (1.65m): <b style="color:#34d399" id="inspRatio">x2.3</b></span>
+          </div>
+        </div>
+
+        <div class="inspector-card">
+          <div class="section-h3">
+            <span>📐 Mở rộng Kích thước & Dịch chuyển Tọa độ</span>
+          </div>
+          <div class="edit-grid">
+            <div class="edit-field">
+              <label>Tên công trình / đường</label>
+              <input type="text" id="inputName" oninput="updateSelectedFromInputs()" />
+            </div>
+            <div class="edit-field">
+              <label>Biển hiệu / Ghi chú</label>
+              <input type="text" id="inputSign" oninput="updateSelectedFromInputs()" />
+            </div>
+            <div class="edit-field">
+              <label>Tọa độ X (mét)</label>
+              <input type="number" step="0.5" id="inputX" oninput="updateSelectedFromInputs()" />
+            </div>
+            <div class="edit-field">
+              <label>Tọa độ Z (mét)</label>
+              <input type="number" step="0.5" id="inputZ" oninput="updateSelectedFromInputs()" />
+            </div>
+            <div class="edit-field">
+              <label>Mở rộng Ngang X (m)</label>
+              <input type="number" step="0.5" min="1" id="inputW" oninput="updateSelectedFromInputs()" />
+            </div>
+            <div class="edit-field">
+              <label>Mở rộng Sâu/Dài Z (m)</label>
+              <input type="number" step="0.5" min="1" id="inputD" oninput="updateSelectedFromInputs()" />
+            </div>
+            <div class="edit-field" id="fieldHeightWrap">
+              <label>Chiều Cao Y (m)</label>
+              <input type="number" step="0.5" min="0.5" id="inputH" oninput="updateSelectedFromInputs()" />
+            </div>
+            <div class="edit-field">
+              <label>Màu sắc</label>
+              <input type="color" id="inputColor" oninput="updateSelectedFromInputs()" style="height:27px;padding:2px" />
+            </div>
+          </div>
+        </div>
+
+        <div class="inspector-card" id="storyCard">
+          <div class="section-h3">
+            <span>📖 Vai trò Chương 1 & Cách Xây Dựng</span>
+          </div>
+          <div style="margin-bottom:5px">
+            <span class="badge" id="inspBranchTag" style="background:rgba(16,185,129,0.2);color:#34d399;border-color:#10b981">Nhánh 1</span>
+          </div>
+          <p class="info-p" id="inspStoryRole" style="margin-bottom:6px"></p>
+          <ul class="how-list" id="inspHowList"></ul>
+          <div class="props-wrap" id="inspProps"></div>
+        </div>
+
+        <div class="inspector-card">
+          <div class="section-h3">
+            <span>🤖 Prompt AI vẽ Blender</span>
+            <button class="btn amber" style="padding:2px 8px" onclick="copyBlenderPrompt()">📋 Copy Prompt</button>
+          </div>
+          <textarea class="prompt-box" id="blenderPromptBox" readonly></textarea>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <div class="toast" id="toast">Đã lưu thay đổi!</div>
+
+  <script src="map_data.js"></script>
+  <script>
+    const STORAGE_KEY = "XOM_TRO_CHUONG1_MAP_V3";
+
+    function loadMapData() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed && parsed.buildings && parsed.roads && parsed.zones) {
+            return parsed;
+          }
+        }
+      } catch (e) {}
+      return JSON.parse(JSON.stringify(window.DEFAULT_GAME_MAP_DATA));
+    }
+
+    let DATA = loadMapData();
+
+    function saveMapData() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(DATA));
+      } catch (e) {}
+    }
+
+    function resetToDefaultMap() {
+      if (!confirm("Khôi phục bản đồ quy hoạch Chương 1 (gồm 9 tuyến đường và 16 công trình) về mặc định?")) return;
+      DATA = JSON.parse(JSON.stringify(window.DEFAULT_GAME_MAP_DATA));
+      saveMapData();
+      selectedKind = "building";
+      selectedId = DATA.buildings[0].id;
+      renderLeftList();
+      updateInspector();
+      showToast("Đã khôi phục bản đồ gốc!");
+    }
+
+    // ==================== THU NHỎ / MỞ RỘNG CÁC BẢNG CHIẾM DIỆN TÍCH ====================
+    let leftCollapsed = false;
+    let rightCollapsed = false;
+    let quickBarCollapsed = false;
+    let helpOpen = false;
+
+    function updateEdgeButtons() {
+      const leftSb = document.getElementById("leftSidebar");
+      const rightSb = document.getElementById("rightSidebar");
+      leftSb.classList.toggle("collapsed", leftCollapsed);
+      rightSb.classList.toggle("collapsed", rightCollapsed);
+
+      document.getElementById("edgeLeftIcon").textContent = leftCollapsed ? "▶ Mở Danh Sách (Nhà/Đường)" : "◀ Thu nhỏ";
+      document.getElementById("edgeRightIcon").textContent = rightCollapsed ? "◀ Mở Chi Tiết & Prompt" : "Thu nhỏ ▶";
+
+      const bothBtn = document.getElementById("btnToggleBothPanels");
+      if (leftCollapsed && rightCollapsed) {
+        bothBtn.textContent = "🗗 Hiện Lại 2 Bảng Trái/Phải";
+        bothBtn.classList.add("active");
+      } else {
+        bothBtn.textContent = "🗖 Mở Rộng Toàn Màn Hình 3D";
+        bothBtn.classList.remove("active");
+      }
+
+      // Cập nhật lại kích thước canvas sau khi hiệu ứng đóng/mở hoàn tất
+      setTimeout(resizeCanvas, 50);
+      setTimeout(resizeCanvas, 220);
+    }
+
+    function toggleLeftSidebar() {
+      leftCollapsed = !leftCollapsed;
+      updateEdgeButtons();
+    }
+
+    function toggleRightSidebar() {
+      rightCollapsed = !rightCollapsed;
+      updateEdgeButtons();
+    }
+
+    function toggleBothPanels() {
+      if (!leftCollapsed || !rightCollapsed) {
+        leftCollapsed = true;
+        rightCollapsed = true;
+      } else {
+        leftCollapsed = false;
+        rightCollapsed = false;
+      }
+      updateEdgeButtons();
+    }
+
+    function toggleQuickExpandBar() {
+      quickBarCollapsed = !quickBarCollapsed;
+      document.getElementById("quickExpandFullBar").style.display = quickBarCollapsed ? "none" : "flex";
+      document.getElementById("quickExpandCollapsedBtn").style.display = quickBarCollapsed ? "inline-flex" : "none";
+    }
+
+    function toggleHelpCard() {
+      helpOpen = !helpOpen;
+      document.getElementById("helpCardBox").style.display = helpOpen ? "block" : "none";
+      document.getElementById("helpBtnText").textContent = helpOpen ? "✖ Ẩn Hướng Dẫn" : "❓ Mở Hướng Dẫn Thao Tác";
+    }
+
+    const canvas = document.getElementById("mapCanvas");
+    const ctx = canvas.getContext("2d");
+
+    let cam = {
+      yaw: 0.0,
+      pitch: 0.58,
+      zoom: 11.2,
+      targetX: -2,
+      targetZ: 0,
+      preset: "turnaround"
+    };
+    let animCam = null;
+
+    let playerAn = {
+      x: -6.5,
+      z: -2.5,
+      height: 1.65
+    };
+    const keys = {};
+
+    let leftTab = "buildings";
+    let selectedKind = "building";
+    let selectedId = "B1_DayPhongTroAn";
+    let currentZoneFilter = "ALL";
+
+    let moveDragMode = false;
+    let isDraggingObject = false;
+    let pinLabelMode = false;
+
+    let timeOfDayIndex = 1;
+    const TIME_MODES = [
+      { name: "Sáng Sớm", bgTop: "#1e3a5f", bgBottom: "#0f172a", ambient: 1.05, warmTint: "rgba(255,250,235,0.03)", nightGlow: false },
+      { name: "Chiều Hoàng Hôn", bgTop: "#3b1d2e", bgBottom: "#0f172a", ambient: 0.96, warmTint: "rgba(251,146,60,0.10)", nightGlow: true },
+      { name: "Đêm Chợ & Đèn Neon", bgTop: "#060913", bgBottom: "#030712", ambient: 0.75, warmTint: "rgba(30,58,138,0.15)", nightGlow: true }
+    ];
+
+    function getSelectedObject() {
+      if (selectedKind === "building") return DATA.buildings.find(b => b.id === selectedId);
+      if (selectedKind === "road") return DATA.roads.find(r => r.id === selectedId);
+      if (selectedKind === "zone") return DATA.zones.find(z => z.id === selectedId);
+      return null;
+    }
+
+    function switchLeftTab(tab) {
+      leftTab = tab;
+      document.getElementById("tabBtnBuildings").classList.toggle("active", tab === "buildings");
+      document.getElementById("tabBtnRoads").classList.toggle("active", tab === "roads");
+      document.getElementById("tabBtnZones").classList.toggle("active", tab === "zones");
+      document.getElementById("zoneFilterBar").style.display = tab === "buildings" ? "grid" : "none";
+      renderLeftList();
+    }
+
+    function renderLeftList() {
+      document.getElementById("countB").textContent = DATA.buildings.length;
+      document.getElementById("countR").textContent = DATA.roads.length;
+      document.getElementById("countZ").textContent = DATA.zones.length;
+
+      const listEl = document.getElementById("leftListContainer");
+
+      if (leftTab === "buildings") {
+        const filtered = DATA.buildings.filter(b => currentZoneFilter === "ALL" || b.zoneId === currentZoneFilter);
+        listEl.innerHTML = filtered.map(b => {
+          const zone = DATA.zones.find(z => z.id === b.zoneId);
+          const isSel = selectedKind === "building" && b.id === selectedId;
+          const lotText = b.lotLabel || b.signText || b.name;
+          return `
+            <div class="b-item ${isSel ? 'selected' : ''}" style="border-left-color:${zone ? zone.color : '#38bdf8'}" onclick="selectItem('building', '${b.id}', true)">
+              <div class="b-item-top">
+                <span class="b-code" style="background:${zone ? zone.color : '#0284c7'}">${b.code}</span>
+                <span class="b-size">${b.width}m × ${b.depth}m × ${b.height}m</span>
+              </div>
+              <div class="b-lot-label">🏷️ ${lotText}</div>
+              <div class="b-name">${b.name}</div>
+            </div>
+          `;
+        }).join("");
+      } else if (leftTab === "roads") {
+        listEl.innerHTML = DATA.roads.map(r => {
+          const isSel = selectedKind === "road" && r.id === selectedId;
+          return `
+            <div class="b-item ${isSel ? 'selected' : ''}" style="border-left-color:#fbbf24" onclick="selectItem('road', '${r.id}', true)">
+              <div class="b-item-top">
+                <span class="b-code" style="background:#d97706">${r.code}</span>
+                <span class="b-size">${r.width}m × ${r.depth}m</span>
+              </div>
+              <div class="b-lot-label">🛣️ ${r.name}</div>
+              <div class="b-name" style="color:#94a3b8">${r.note || ''}</div>
+            </div>
+          `;
+        }).join("");
+      } else if (leftTab === "zones") {
+        listEl.innerHTML = DATA.zones.map(z => {
+          const isSel = selectedKind === "zone" && z.id === selectedId;
+          return `
+            <div class="b-item ${isSel ? 'selected' : ''}" style="border-left-color:${z.color}" onclick="selectItem('zone', '${z.id}', true)">
+              <div class="b-item-top">
+                <span class="b-code" style="background:${z.color}">${z.code}</span>
+                <span class="b-size">${z.width}m × ${z.depth}m</span>
+              </div>
+              <div class="b-lot-label">🗺️ ${z.name}</div>
+              <div class="b-name" style="color:#94a3b8">${z.subtitle || ''}</div>
+            </div>
+          `;
+        }).join("");
+      }
+    }
+
+    function selectItem(kind, id, flyTo = false) {
+      selectedKind = kind;
+      selectedId = id;
+      renderLeftList();
+      updateInspector();
+      const obj = getSelectedObject();
+      if (obj && flyTo) {
+        animateCameraTo(obj.x, obj.z, cam.yaw, cam.pitch, Math.max(cam.zoom, 11.5));
+      }
+    }
+
+    function filterZone(zoneId) {
+      currentZoneFilter = zoneId;
+      document.querySelectorAll(".zone-chip").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.zone === zoneId);
+      });
+      renderLeftList();
+      if (zoneId !== "ALL") focusZone(zoneId);
+    }
+
+    function focusZone(zoneId) {
+      const z = DATA.zones.find(item => item.id === zoneId);
+      if (!z) return;
+      animateCameraTo(z.x, z.z, cam.yaw, Math.max(cam.pitch, 0.52), 12.8);
+    }
+
+    function updateInspector() {
+      const obj = getSelectedObject();
+      if (!obj) return;
+
+      const quickNameEl = document.getElementById("quickBarTargetName");
+      const heightRow = document.getElementById("quickHeightRow");
+      const fieldHeightWrap = document.getElementById("fieldHeightWrap");
+      const storyCard = document.getElementById("storyCard");
+
+      if (selectedKind === "building") {
+        const zone = DATA.zones.find(z => z.id === obj.zoneId);
+        document.getElementById("inspZoneBadge").textContent = zone ? `${zone.code} — ${zone.name}` : "Ô NHÀ TÙY CHỈNH";
+        document.getElementById("inspName").textContent = `[${obj.code}] ${obj.name}`;
+        document.getElementById("inputLotLabel").value = obj.lotLabel || obj.signText || obj.name;
+
+        document.getElementById("inspWidth").textContent = `${obj.width}m`;
+        document.getElementById("inspDepth").textContent = `${obj.depth}m`;
+        document.getElementById("inspHeight").textContent = `${obj.height}m`;
+        document.getElementById("inspCoord").textContent = `X = ${obj.x}m, Z = ${obj.z}m`;
+        document.getElementById("inspRatio").textContent = `Cao gấp ${(obj.height / 1.65).toFixed(1)} lần An`;
+
+        document.getElementById("inputName").value = obj.name;
+        document.getElementById("inputSign").value = obj.signText || "";
+        document.getElementById("inputX").value = obj.x;
+        document.getElementById("inputZ").value = obj.z;
+        document.getElementById("inputW").value = obj.width;
+        document.getElementById("inputD").value = obj.depth;
+        document.getElementById("inputH").value = obj.height;
+        document.getElementById("inputColor").value = obj.color && obj.color.startsWith("#") ? obj.color : "#38bdf8";
+
+        heightRow.style.display = "flex";
+        fieldHeightWrap.style.display = "block";
+        storyCard.style.display = "block";
+
+        document.getElementById("inspBranchTag").textContent = obj.branchTag || "Công trình Chương 1";
+        document.getElementById("inspStoryRole").textContent = obj.storyRole || "";
+        document.getElementById("inspHowList").innerHTML = (obj.howToBuild || []).map(i => `<li>${i}</li>`).join("");
+        document.getElementById("inspProps").innerHTML = (obj.props || []).map(p => `<span class="prop-tag">${p}</span>`).join("");
+
+        quickNameEl.textContent = `🏠 ${obj.lotLabel || obj.code}`;
+        document.getElementById("blenderPromptBox").value = generateBlenderPromptForBuilding(obj, zone);
+      } else if (selectedKind === "road") {
+        document.getElementById("inspZoneBadge").textContent = "🛣️ TUYẾN ĐƯỜNG / HẺM";
+        document.getElementById("inspName").textContent = `[${obj.code}] ${obj.name}`;
+        document.getElementById("inputLotLabel").value = obj.name;
+
+        document.getElementById("inspWidth").textContent = `${obj.width}m`;
+        document.getElementById("inspDepth").textContent = `${obj.depth}m`;
+        document.getElementById("inspHeight").textContent = `Mặt đường`;
+        document.getElementById("inspCoord").textContent = `X = ${obj.x}m, Z = ${obj.z}m`;
+        document.getElementById("inspRatio").textContent = obj.hasSidewalk ? "Có vỉa hè 2 bên" : "Hẻm xi măng";
+
+        document.getElementById("inputName").value = obj.name;
+        document.getElementById("inputSign").value = obj.note || "";
+        document.getElementById("inputX").value = obj.x;
+        document.getElementById("inputZ").value = obj.z;
+        document.getElementById("inputW").value = obj.width;
+        document.getElementById("inputD").value = obj.depth;
+        document.getElementById("inputColor").value = obj.color && obj.color.startsWith("#") ? obj.color : "#334155";
+
+        heightRow.style.display = "none";
+        fieldHeightWrap.style.display = "none";
+        storyCard.style.display = "none";
+
+        quickNameEl.textContent = `🛣️ ${obj.code}: ${obj.name}`;
+        document.getElementById("blenderPromptBox").value = `Hãy viết script Python Blender (bpy) dựng tuyến đường "${obj.name}" (${obj.code}):
+- Kích thước mặt đường: Rộng X = ${obj.width}m × Sâu Z = ${obj.depth}m, tâm tại (X = ${obj.x}m, Z = ${obj.z}m).
+- ${obj.hasSidewalk ? 'Có vỉa hè lát gạch hai bên rộng ' + obj.sidewalkWidth + 'm, cao 0.12m.' : 'Mặt hẻm xi măng/nhựa phẳng đặc trưng hẻm Cần Thơ.'}
+- Ghi chú: ${obj.note || ''}`;
+      } else if (selectedKind === "zone") {
+        document.getElementById("inspZoneBadge").textContent = "🗺️ KHU VỰC QUY HOẠCH";
+        document.getElementById("inspName").textContent = `${obj.code}: ${obj.name}`;
+        document.getElementById("inputLotLabel").value = obj.name;
+
+        document.getElementById("inspWidth").textContent = `${obj.width}m`;
+        document.getElementById("inspDepth").textContent = `${obj.depth}m`;
+        document.getElementById("inspHeight").textContent = `Nền Khu`;
+        document.getElementById("inspCoord").textContent = `X = ${obj.x}m, Z = ${obj.z}m`;
+        document.getElementById("inspRatio").textContent = `${(obj.width * obj.depth).toFixed(0)} m²`;
+
+        document.getElementById("inputName").value = obj.name;
+        document.getElementById("inputSign").value = obj.subtitle || "";
+        document.getElementById("inputX").value = obj.x;
+        document.getElementById("inputZ").value = obj.z;
+        document.getElementById("inputW").value = obj.width;
+        document.getElementById("inputD").value = obj.depth;
+        document.getElementById("inputColor").value = obj.color && obj.color.startsWith("#") ? obj.color : "#10b981";
+
+        heightRow.style.display = "none";
+        fieldHeightWrap.style.display = "none";
+        storyCard.style.display = "block";
+        document.getElementById("inspBranchTag").textContent = obj.subtitle || obj.code;
+        document.getElementById("inspStoryRole").textContent = obj.description + " — " + (obj.chapter1Role || "");
+        document.getElementById("inspHowList").innerHTML = "";
+        document.getElementById("inspProps").innerHTML = "";
+
+        quickNameEl.textContent = `🗺️ ${obj.code}: ${obj.name}`;
+        document.getElementById("blenderPromptBox").value = `Khu vực quy hoạch "${obj.code} - ${obj.name}":
+- Kích thước toàn khu: Rộng X = ${obj.width}m × Sâu Z = ${obj.depth}m, tâm tại (X = ${obj.x}m, Z = ${obj.z}m).
+- Mô tả: ${obj.description}`;
+      }
+    }
+
+    function generateBlenderPromptForBuilding(b, zone) {
+      const howBullets = (b.howToBuild || []).map(line => `- ${line}`).join("\n");
+      const propsStr = (b.props || []).join(", ");
+      const displayLabel = b.lotLabel || b.name;
+      return `Hãy viết script Python Blender (bpy) để dựng mô hình 3D "${displayLabel} — ${b.name}" (Mã ô: ${b.code}, thuộc ${zone ? zone.name : 'Bản đồ Chương 1'}) cho game 3D Turnaround "Xóm Trọ" (v0.2).
+
+1. THÔNG SỐ KỸ THUẬT & TỈ LỆ CHUẨN (1 đơn vị = 1 mét):
+- Nhân vật tham chiếu: Nữ cử nhân An cao 1.65m (cửa đi chuẩn cao 2.1m - 2.2m, bàn cao 0.75m, ghế đẩu nhựa cao 0.35m).
+- Kích thước khối công trình: Rộng (X) = ${b.width}m, Sâu (Y trong Blender / Z trong Unity) = ${b.depth}m, Cao (Z trong Blender / Y trong Unity) = ${b.height}m.
+- Tọa độ đặt trên bản đồ tổng Chương 1: Tâm tại (X = ${b.x}m, Z = ${b.z}m), mặt tiền quay về hướng Nam (-Y trong Blender / -Z trong Unity).
+
+2. CẤU TRÚC KIẾN TRÚC & CHI TIẾT CẦN DỰNG:
+${howBullets}
+- Chữ ghi trên ô / Biển hiệu: "${b.signText || displayLabel}"
+- Danh sách vật thể (Props) đi kèm: ${propsStr}
+
+3. VẬT LIỆU & XUẤT FILE:
+- Stylized PBR đời thường Việt Nam (màu tường chính: ${b.color}, màu mái: ${b.roofColor}).
+- Xuất ra file FBX chuẩn tỉ lệ 1:1 cho Unity 6.`;
+    }
+
+    function updateSelectedFromInputs() {
+      const obj = getSelectedObject();
+      if (!obj) return;
+
+      const lotText = document.getElementById("inputLotLabel").value;
+      const nameText = document.getElementById("inputName").value;
+      const signText = document.getElementById("inputSign").value;
+      const nx = parseFloat(document.getElementById("inputX").value) || 0;
+      const nz = parseFloat(document.getElementById("inputZ").value) || 0;
+      const nw = Math.max(1, parseFloat(document.getElementById("inputW").value) || 4);
+      const nd = Math.max(1, parseFloat(document.getElementById("inputD").value) || 4);
+      const nh = Math.max(0.5, parseFloat(document.getElementById("inputH").value) || 3.5);
+      const col = document.getElementById("inputColor").value;
+
+      obj.x = nx;
+      obj.z = nz;
+      obj.width = nw;
+      obj.depth = nd;
+
+      if (selectedKind === "building") {
+        obj.lotLabel = lotText;
+        obj.name = nameText || obj.name;
+        obj.signText = signText;
+        obj.height = nh;
+        obj.color = col;
+      } else if (selectedKind === "road") {
+        obj.name = lotText || nameText || obj.name;
+        obj.note = signText;
+        obj.color = col;
+      } else if (selectedKind === "zone") {
+        obj.name = lotText || nameText || obj.name;
+        obj.subtitle = signText;
+        obj.color = col;
+        obj.borderColor = col;
+      }
+
+      saveMapData();
+      renderLeftList();
+      updateInspector();
+    }
+
+    function quickResizeSelected(dw, dd, dh) {
+      const obj = getSelectedObject();
+      if (!obj) return;
+      obj.width = Math.max(1.5, Math.round((obj.width + dw) * 10) / 10);
+      obj.depth = Math.max(1.5, Math.round((obj.depth + dd) * 10) / 10);
+      if (selectedKind === "building" && dh !== 0) {
+        obj.height = Math.max(1.5, Math.round((obj.height + dh) * 10) / 10);
+      }
+      saveMapData();
+      renderLeftList();
+      updateInspector();
+      showToast(`Kích thước mới: ${obj.width}m × ${obj.depth}m${obj.height ? ' × cao ' + obj.height + 'm' : ''}`);
+    }
+
+    function promptQuickRename() {
+      const obj = getSelectedObject();
+      if (!obj) return;
+      const currentLabel = selectedKind === "building" ? (obj.lotLabel || obj.name) : obj.name;
+      const newLabel = prompt("Nhập CHỮ TÊN Ô ĐẤT (để ghi nhớ xây nhà gì ở ô này):", currentLabel);
+      if (newLabel !== null && newLabel.trim() !== "") {
+        if (selectedKind === "building") {
+          obj.lotLabel = newLabel.trim();
+          obj.signText = newLabel.trim();
+        } else {
+          obj.name = newLabel.trim();
+        }
+        saveMapData();
+        renderLeftList();
+        updateInspector();
+        showToast("Đã ghi chữ tên ô: " + newLabel.trim());
+      }
+    }
+
+    function addNewCustomBuilding() {
+      const idx = DATA.buildings.length + 1;
+      const customLabel = prompt("Nhập TÊN Ô NHÀ MỚI bạn muốn xây (VD: TIỆM SỬA XE, QUÁN BÚN RIÊU...):", "NHÀ MỚI #" + idx);
+      if (customLabel === null) return;
+      const labelClean = customLabel.trim() || ("NHÀ MỚI #" + idx);
+
+      const targetZoneId = currentZoneFilter === "ALL" ? "zone_boarding_house" : currentZoneFilter;
+      const zone = DATA.zones.find(z => z.id === targetZoneId) || DATA.zones[1];
+      const newB = {
+        id: "Custom_" + Date.now(),
+        zoneId: zone.id,
+        code: "Ô #" + idx,
+        lotLabel: labelClean.toUpperCase(),
+        name: labelClean,
+        type: "shophouse",
+        x: Math.round(cam.targetX),
+        z: Math.round(cam.targetZ),
+        width: 8.0,
+        depth: 6.0,
+        height: 4.5,
+        color: "#38bdf8",
+        roofColor: "#0284c7",
+        accentColor: "#fef08a",
+        signText: labelClean.toUpperCase(),
+        branchTag: "Ô nhà mới do bạn thêm",
+        branchColor: "#38bdf8",
+        storyRole: `Ô đất xây dựng "${labelClean}". Dùng nút Mở rộng (+2m) hoặc bật '✋ Kéo Ô' để đặt vào vị trí mong muốn.`,
+        howToBuild: [
+          `Khối công trình "${labelClean}" mặt tiền hướng ra đường, cửa cao 2.1m phù hợp với nhân vật An (1.65m)`
+        ],
+        props: ["Biển hiệu " + labelClean, "Cửa chính 2.1m"]
+      };
+      DATA.buildings.push(newB);
+      saveMapData();
+      switchLeftTab("buildings");
+      selectItem("building", newB.id, false);
+      showToast("Đã thêm ô nhà: " + labelClean);
+    }
+
+    function addNewRoadSegment() {
+      const idx = DATA.roads.length + 1;
+      const roadName = prompt("Nhập TÊN CON ĐƯỜNG / HẺM MỚI (VD: HẺM NHÁNH 2, ĐƯỜNG NỐI...):", "ĐƯỜNG MỚI #" + idx);
+      if (roadName === null) return;
+      const newR = {
+        id: "road_custom_" + Date.now(),
+        code: "ĐƯỜNG #" + idx,
+        name: roadName.trim() || ("Đường Mới #" + idx),
+        x: Math.round(cam.targetX),
+        z: Math.round(cam.targetZ),
+        width: 24.0,
+        depth: 5.0,
+        hasSidewalk: true,
+        sidewalkWidth: 1.2,
+        color: "#334155",
+        note: "Đoạn đường mới thêm. Dùng nút +2m (Ngang X hoặc Dài Z) để mở rộng đường."
+      };
+      DATA.roads.push(newR);
+      saveMapData();
+      switchLeftTab("roads");
+      selectItem("road", newR.id, false);
+      showToast("Đã thêm tuyến đường mới!");
+    }
+
+    function duplicateSelectedItem() {
+      const obj = getSelectedObject();
+      if (!obj) return;
+      const copy = JSON.parse(JSON.stringify(obj));
+      copy.id = selectedKind + "_copy_" + Date.now();
+      copy.x = Math.round((obj.x + obj.width * 0.6) * 2) / 2;
+      copy.z = Math.round((obj.z + 2) * 2) / 2;
+
+      if (selectedKind === "building") {
+        copy.code = obj.code + "-B";
+        copy.lotLabel = (obj.lotLabel || obj.name) + " (2)";
+        DATA.buildings.push(copy);
+      } else if (selectedKind === "road") {
+        copy.code = obj.code + "-B";
+        copy.name = obj.name + " (Nhánh)";
+        DATA.roads.push(copy);
+      } else if (selectedKind === "zone") {
+        copy.code = obj.code + "+";
+        copy.name = obj.name + " (Mở rộng)";
+        DATA.zones.push(copy);
+      }
+      saveMapData();
+      renderLeftList();
+      selectItem(selectedKind, copy.id, false);
+      showToast("Đã nhân bản ô thành công!");
+    }
+
+    function deleteSelectedItem() {
+      const obj = getSelectedObject();
+      if (!obj) return;
+      if (!confirm(`Xóa "${obj.lotLabel || obj.name}"?`)) return;
+      if (selectedKind === "building") {
+        DATA.buildings = DATA.buildings.filter(b => b.id !== selectedId);
+        if (DATA.buildings.length) selectItem("building", DATA.buildings[0].id, false);
+      } else if (selectedKind === "road") {
+        DATA.roads = DATA.roads.filter(r => r.id !== selectedId);
+        if (DATA.roads.length) selectItem("road", DATA.roads[0].id, false);
+      } else if (selectedKind === "zone") {
+        DATA.zones = DATA.zones.filter(z => z.id !== selectedId);
+        if (DATA.zones.length) selectItem("zone", DATA.zones[0].id, false);
+      }
+      saveMapData();
+      renderLeftList();
+      showToast("Đã xóa ô khỏi bản đồ!");
+    }
+
+    function toggleMoveDragMode() {
+      moveDragMode = !moveDragMode;
+      if (moveDragMode) pinLabelMode = false;
+      document.getElementById("btnMoveMode").classList.toggle("active", moveDragMode);
+      document.getElementById("btnAddMarkerMode").classList.remove("active");
+      document.getElementById("moveModeState").textContent = moveDragMode ? "BẬT" : "TẮT";
+      canvas.style.cursor = moveDragMode ? "move" : "grab";
+      showToast(moveDragMode ? "Đã BẬT chế độ Kéo Ô! Giữ chuột trái kéo ô nhà/đường." : "Đã TẮT chế độ kéo ô.");
+    }
+
+    function togglePinLabelMode() {
+      pinLabelMode = !pinLabelMode;
+      if (pinLabelMode) moveDragMode = false;
+      document.getElementById("btnAddMarkerMode").classList.toggle("active", pinLabelMode);
+      document.getElementById("btnMoveMode").classList.remove("active");
+      document.getElementById("moveModeState").textContent = "TẮT";
+      canvas.style.cursor = pinLabelMode ? "crosshair" : "grab";
+      showToast(pinLabelMode ? "Click chuột trái vào bản đồ để GHIM CHỮ GHI CHÚ!" : "Đã tắt chế độ ghim chữ.");
+    }
+
+    function copyBlenderPrompt() {
+      const box = document.getElementById("blenderPromptBox");
+      box.select();
+      navigator.clipboard.writeText(box.value);
+      showToast("Đã copy Prompt vẽ Blender vào Clipboard!");
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById("toast");
+      t.textContent = msg;
+      t.classList.add("show");
+      clearTimeout(window._toastTimer);
+      window._toastTimer = setTimeout(() => t.classList.remove("show"), 2200);
+    }
+
+    function setCameraPreset(preset) {
+      cam.preset = preset;
+      document.getElementById("btnCamTurnaround").classList.toggle("active", preset === "turnaround");
+      document.getElementById("btnCamTopDown").classList.toggle("active", preset === "topdown");
+      document.getElementById("btnCamFollowAn").classList.toggle("active", preset === "follow");
+
+      if (preset === "turnaround") {
+        animateCameraTo(-2, 0, 0.0, 0.58, 11.2);
+      } else if (preset === "topdown") {
+        animateCameraTo(-2, 0, 0.0, 1.50, 10.5);
+      } else if (preset === "follow") {
+        animateCameraTo(playerAn.x, playerAn.z, 0.0, 0.54, 17.5);
+      }
+    }
+
+    function animateCameraTo(tx, tz, tyaw, tpitch, tzoom) {
+      animCam = {
+        startX: cam.targetX, startZ: cam.targetZ,
+        startYaw: cam.yaw, startPitch: cam.pitch, startZoom: cam.zoom,
+        endX: tx, endZ: tz, endYaw: tyaw, endPitch: tpitch, endZoom: tzoom,
+        t: 0
+      };
+    }
+
+    function cycleTimeOfDay() {
+      timeOfDayIndex = (timeOfDayIndex + 1) % TIME_MODES.length;
+      document.getElementById("timeLabel").textContent = TIME_MODES[timeOfDayIndex].name;
+    }
+
+    // ==================== HỆ THỐNG KẾT XUẤT 3D ====================
+    function resizeCanvas() {
+      const rect = canvas.parentElement.getBoundingClientRect();
+      canvas.width = rect.width * window.devicePixelRatio;
+      canvas.height = rect.height * window.devicePixelRatio;
+      ctx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0);
+    }
+    window.addEventListener("resize", resizeCanvas);
+
+    function project3D(wx, wy, wz) {
+      const w = canvas.width / window.devicePixelRatio;
+      const h = canvas.height / window.devicePixelRatio;
+
+      const dx = wx - cam.targetX;
+      const dz = wz - cam.targetZ;
+
+      const cosY = Math.cos(cam.yaw);
+      const sinY = Math.sin(cam.yaw);
+      const rx = dx * cosY - dz * sinY;
+      const rz = dx * sinY + dz * cosY;
+
+      const cosP = Math.cos(cam.pitch);
+      const sinP = Math.sin(cam.pitch);
+
+      const screenX = w * 0.5 + rx * cam.zoom;
+      const screenY = h * 0.53 + (rz * sinP - wy * cosP) * cam.zoom;
+      const depth = rz * cosP + wy * sinP;
+      return { x: screenX, y: screenY, depth };
+    }
+
+    function screenToGround(sx, sy) {
+      const w = canvas.width / window.devicePixelRatio;
+      const h = canvas.height / window.devicePixelRatio;
+      const rx = (sx - w * 0.5) / cam.zoom;
+      const rz = (sy - h * 0.53) / (cam.zoom * Math.max(0.25, Math.sin(cam.pitch)));
+
+      const cosY = Math.cos(-cam.yaw);
+      const sinY = Math.sin(-cam.yaw);
+      const wx = cam.targetX + (rx * cosY - rz * sinY);
+      const wz = cam.targetZ + (rx * sinY + rz * cosY);
+      return { x: Math.round(wx * 2) / 2, z: Math.round(wz * 2) / 2 };
+    }
+
+    function shadeColor(hex, factor) {
+      if (!hex || !hex.startsWith("#") || hex.length !== 7) return hex || "#64748b";
+      let r = parseInt(hex.slice(1, 3), 16);
+      let g = parseInt(hex.slice(3, 5), 16);
+      let b = parseInt(hex.slice(5, 7), 16);
+      r = Math.min(255, Math.max(0, Math.round(r * factor)));
+      g = Math.min(255, Math.max(0, Math.round(g * factor)));
+      b = Math.min(255, Math.max(0, Math.round(b * factor)));
+      return `rgb(${r},${g},${b})`;
+    }
+
+    function drawBox3D(cx, baseY, cz, w, h, d, wallColor, roofColor, strokeColor = "rgba(15,23,42,0.65)", alpha = 1.0) {
+      const hw = w / 2, hd = d / 2;
+      const y0 = baseY, y1 = baseY + h;
+
+      const p = [
+        project3D(cx - hw, y0, cz - hd),
+        project3D(cx + hw, y0, cz - hd),
+        project3D(cx + hw, y0, cz + hd),
+        project3D(cx - hw, y0, cz + hd),
+        project3D(cx - hw, y1, cz - hd),
+        project3D(cx + hw, y1, cz - hd),
+        project3D(cx + hw, y1, cz + hd),
+        project3D(cx - hw, y1, cz + hd)
+      ];
+
+      const amb = TIME_MODES[timeOfDayIndex].ambient;
+      const faces = [
+        { idx: [0, 1, 5, 4], shade: 0.68 * amb, isRoof: false },
+        { idx: [1, 2, 6, 5], shade: 0.80 * amb, isRoof: false },
+        { idx: [2, 3, 7, 6], shade: 0.98 * amb, isRoof: false },
+        { idx: [3, 0, 4, 7], shade: 0.74 * amb, isRoof: false },
+        { idx: [4, 5, 6, 7], shade: 1.08 * amb, isRoof: true }
+      ];
+
+      faces.forEach(f => {
+        f.depth = (p[f.idx[0]].depth + p[f.idx[1]].depth + p[f.idx[2]].depth + p[f.idx[3]].depth) / 4;
+      });
+      faces.sort((a, b) => a.depth - b.depth);
+
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      for (const f of faces) {
+        ctx.beginPath();
+        ctx.moveTo(p[f.idx[0]].x, p[f.idx[0]].y);
+        ctx.lineTo(p[f.idx[1]].x, p[f.idx[1]].y);
+        ctx.lineTo(p[f.idx[2]].x, p[f.idx[2]].y);
+        ctx.lineTo(p[f.idx[3]].x, p[f.idx[3]].y);
+        ctx.closePath();
+        ctx.fillStyle = shadeColor(f.isRoof ? roofColor : wallColor, f.shade);
+        ctx.fill();
+        if (strokeColor) {
+          ctx.strokeStyle = strokeColor;
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        }
+      }
+      ctx.restore();
+    }
+
+    function drawFlatQuad(y, x0, z0, x1, z1, fill, stroke, lineWidth = 1) {
+      const p0 = project3D(x0, y, z0);
+      const p1 = project3D(x1, y, z0);
+      const p2 = project3D(x1, y, z1);
+      const p3 = project3D(x0, y, z1);
+      ctx.beginPath();
+      ctx.moveTo(p0.x, p0.y);
+      ctx.lineTo(p1.x, p1.y);
+      ctx.lineTo(p2.x, p2.y);
+      ctx.lineTo(p3.x, p3.y);
+      ctx.closePath();
+      if (fill) {
+        ctx.fillStyle = fill;
+        ctx.fill();
+      }
+      if (stroke) {
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = lineWidth;
+        ctx.stroke();
+      }
+    }
+
+    let clickableRegions = [];
+
+    function drawGroundZonesAndRoads() {
+      // Nền mặt đất tổng
+      drawFlatQuad(0, -64, -38, 64, 38, "#0b1120", "#1e293b");
+
+      // Lưới mét (4m × 4m)
+      ctx.strokeStyle = "rgba(148, 163, 184, 0.07)";
+      ctx.lineWidth = 1;
+      for (let x = -64; x <= 64; x += 4) {
+        const a = project3D(x, 0, -38), b = project3D(x, 0, 38);
+        ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+      }
+      for (let z = -38; z <= 38; z += 4) {
+        const a = project3D(-64, 0, z), b = project3D(64, 0, z);
+        ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+      }
+
+      // 1. Vẽ 5 Khu vực (Zones)
+      for (const z of DATA.zones) {
+        const isSel = selectedKind === "zone" && selectedId === z.id;
+        const x0 = z.x - z.width / 2, x1 = z.x + z.width / 2;
+        const z0 = z.z - z.depth / 2, z1 = z.z + z.depth / 2;
+
+        drawFlatQuad(0.03, x0, z0, x1, z1, z.groundColor, isSel ? "#fff" : z.borderColor, isSel ? 3.5 : 2.0);
+
+        const labelPos = project3D(z.x, 0.1, z1 + 1.2);
+        ctx.save();
+        ctx.font = "800 11.5px 'Segoe UI', sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillStyle = z.borderColor;
+        ctx.shadowColor = "rgba(0,0,0,0.95)";
+        ctx.shadowBlur = 4;
+        ctx.fillText(`${z.code}: ${z.name.toUpperCase()} (${z.width}m × ${z.depth}m)`, labelPos.x, labelPos.y);
+        ctx.restore();
+      }
+
+      // 2. Vẽ Hệ thống 9 Tuyến Đường & Hẻm rõ nét
+      for (const r of DATA.roads) {
+        const isSel = selectedKind === "road" && selectedId === r.id;
+        const x0 = r.x - r.width / 2, x1 = r.x + r.width / 2;
+        const z0 = r.z - r.depth / 2, z1 = r.z + r.depth / 2;
+
+        // Vỉa hè lát gạch nổi bật hai bên đường
+        if (r.hasSidewalk) {
+          const sw = r.sidewalkWidth || 1.4;
+          if (r.width >= r.depth) {
+            drawFlatQuad(0.05, x0, z0 - sw, x1, z1 + sw, "#64748b", "#94a3b8", 1);
+          } else {
+            drawFlatQuad(0.05, x0 - sw, z0, x1 + sw, z1, "#64748b", "#94a3b8", 1);
+          }
+        }
+
+        // Lòng đường nhựa (tương phản rõ với nền đất)
+        drawFlatQuad(0.07, x0, z0, x1, z1, r.color || "#334155", isSel ? "#fde047" : "#94a3b8", isSel ? 3 : 1.2);
+
+        // Vạch kẻ tim đường đứt nét màu vàng sáng
+        if (r.width > r.depth * 1.4) {
+          for (let lx = x0 + 2; lx < x1 - 2; lx += 4.5) {
+            drawFlatQuad(0.08, lx, r.z - 0.16, Math.min(lx + 2.2, x1 - 1), r.z + 0.16, "#fde047", null);
+          }
+        } else if (r.depth > r.width * 1.4) {
+          for (let lz = z0 + 2; lz < z1 - 2; lz += 4.5) {
+            drawFlatQuad(0.08, r.x - 0.16, lz, r.x + 0.16, Math.min(lz + 2.2, z1 - 1), "#fde047", null);
+          }
+        }
+
+        // Vạch kẻ người đi bộ qua đường (Crosswalk) tại ngã tư chính
+        if (r.hasCrosswalk && r.width > r.depth) {
+          for (let s = -3; s <= 3; s += 1.2) {
+            drawFlatQuad(0.085, 8.5, r.z + s - 0.3, 10.2, r.z + s + 0.3, "#f8fafc", null);
+            drawFlatQuad(0.085, -16.5, r.z + s - 0.3, -14.8, r.z + s + 0.3, "#f8fafc", null);
+          }
+        }
+
+        // Nhãn tên Đường gọn gàng ngay trên mặt đường
+        const rCenter = project3D(r.x, 0.12, r.z);
+        ctx.save();
+        ctx.font = isSel ? "800 11.5px 'Segoe UI', sans-serif" : "700 10.5px 'Segoe UI', sans-serif";
+        ctx.textAlign = "center";
+        const rLabel = `🛣️ ${r.code}: ${r.name} (${r.width}m×${r.depth}m)`;
+        const rw = ctx.measureText(rLabel).width + 10;
+        ctx.fillStyle = isSel ? "#d97706" : "rgba(15, 23, 42, 0.78)";
+        ctx.strokeStyle = isSel ? "#fef08a" : "#64748b";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.roundRect(rCenter.x - rw / 2, rCenter.y - 9, rw, 18, 4);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = isSel ? "#fff" : "#fde047";
+        ctx.textBaseline = "middle";
+        ctx.fillText(rLabel, rCenter.x, rCenter.y);
+        ctx.restore();
+
+        clickableRegions.push({
+          kind: "road",
+          id: r.id,
+          x: rCenter.x,
+          y: rCenter.y,
+          r: Math.max(22, Math.min(r.width, r.depth) * cam.zoom * 0.45),
+          depth: rCenter.depth - 5
+        });
+      }
+    }
+
+    function drawBuildingDetailed(b) {
+      const isSelected = selectedKind === "building" && b.id === selectedId;
+      const baseStroke = isSelected ? "#fde047" : "rgba(15,23,42,0.75)";
+
+      drawFlatQuad(0.08, b.x - b.width / 2 + 0.5, b.z - b.depth / 2 + 0.5, b.x + b.width / 2 + 0.8, b.z + b.depth / 2 + 0.7, "rgba(0,0,0,0.35)", null);
+
+      if (b.type === "arch_gate") {
+        const pillarW = 1.1;
+        drawBox3D(b.x - b.width / 2 + pillarW / 2, 0, b.z, pillarW, b.height - 1.0, b.depth, b.color, b.roofColor, baseStroke);
+        drawBox3D(b.x + b.width / 2 - pillarW / 2, 0, b.z, pillarW, b.height - 1.0, b.depth, b.color, b.roofColor, baseStroke);
+        drawBox3D(b.x, b.height - 1.3, b.z, b.width + 0.6, 1.3, b.depth + 0.3, "#dc2626", "#f59e0b", baseStroke);
+      } else if (b.type === "market_stalls") {
+        const count = 3;
+        const sw = (b.width - 0.8) / count;
+        for (let i = 0; i < count; i++) {
+          const sx = b.x - b.width / 2 + sw / 2 + 0.2 + i * (sw + 0.2);
+          drawBox3D(sx, 0, b.z, sw * 0.9, 1.0, b.depth * 0.75, "#e2e8f0", b.color, baseStroke);
+          drawBox3D(sx, 2.2, b.z, sw, 0.9, b.depth, b.color, b.roofColor, baseStroke);
+        }
+      } else if (b.type === "plaza_steps") {
+        for (let s = 0; s < 4; s++) {
+          const stepD = b.depth * (1 - s * 0.2);
+          drawBox3D(b.x, s * 0.45, b.z - s * 0.3, b.width, 0.45, stepD, b.color, b.roofColor, baseStroke);
+        }
+      } else {
+        drawBox3D(b.x, 0, b.z, b.width, b.height, b.depth, b.color, b.roofColor, baseStroke);
+
+        if (b.type === "boarding_row" || b.type === "shophouse" || b.type === "food_block") {
+          drawBox3D(b.x, 2.7, b.z + b.depth / 2 + 0.6, b.width, 0.25, 1.2, b.accentColor || "#38bdf8", b.roofColor, null);
+        }
+
+        const floors = Math.max(1, Math.floor(b.height / 3.4));
+        const cols = Math.max(2, Math.floor(b.width / 2.6));
+        const winGlow = TIME_MODES[timeOfDayIndex].nightGlow ? "#fde047" : "#bae6fd";
+
+        for (let fl = 0; fl < floors; fl++) {
+          const wy = 1.2 + fl * 3.2;
+          if (wy + 1.2 > b.height) continue;
+          for (let c = 0; c < cols; c++) {
+            const wx = b.x - b.width / 2 + (b.width / (cols + 1)) * (c + 1);
+            const wz = b.z + b.depth / 2 + 0.05;
+            const p0 = project3D(wx - 0.45, wy, wz);
+            const p1 = project3D(wx + 0.45, wy, wz);
+            const p2 = project3D(wx + 0.45, wy + 1.1, wz);
+            const p3 = project3D(wx - 0.45, wy + 1.1, wz);
+            ctx.beginPath();
+            ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.lineTo(p3.x, p3.y);
+            ctx.closePath();
+            ctx.fillStyle = (fl === 0 && c === Math.floor(cols / 2)) ? "#0f172a" : winGlow;
+            ctx.fill();
+          }
+        }
+      }
+
+      if (isSelected) {
+        const hw = b.width / 2 + 0.4, hd = b.depth / 2 + 0.4;
+        drawFlatQuad(0.14, b.x - hw, b.z - hd, b.x + hw, b.z + hd, null, "#fde047", 3.2);
+      }
+
+      const frontGroundPos = project3D(b.x, 0.15, b.z + b.depth / 2 + 0.85);
+      const lotText = b.lotLabel || b.signText || b.name;
+      ctx.save();
+      ctx.font = "700 10.5px Consolas, 'Segoe UI', monospace";
+      ctx.textAlign = "center";
+      ctx.fillStyle = isSelected ? "#fde047" : "#a7f3d0";
+      ctx.shadowColor = "rgba(0,0,0,0.95)";
+      ctx.shadowBlur = 4;
+      ctx.fillText(`${b.width}m × ${b.depth}m × Cao ${b.height}m`, frontGroundPos.x, frontGroundPos.y);
+      ctx.restore();
+
+      const topPos = project3D(b.x, b.height + 0.9, b.z);
+      ctx.save();
+      ctx.font = isSelected ? "800 12px 'Segoe UI', sans-serif" : "800 11px 'Segoe UI', sans-serif";
+      const badgeLabel = `[${b.code}] ${lotText}`;
+      const textW = ctx.measureText(badgeLabel).width + 12;
+      const boxH = 20;
+
+      ctx.fillStyle = isSelected ? "#d97706" : "rgba(15, 23, 42, 0.90)";
+      ctx.strokeStyle = isSelected ? "#fef08a" : (b.accentColor || "#38bdf8");
+      ctx.lineWidth = isSelected ? 2.0 : 1.1;
+      ctx.beginPath();
+      ctx.roundRect(topPos.x - textW / 2, topPos.y - boxH / 2, textW, boxH, 5);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = "#ffffff";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(badgeLabel, topPos.x, topPos.y);
+      ctx.restore();
+
+      const centerScreen = project3D(b.x, b.height * 0.5, b.z);
+      clickableRegions.push({
+        kind: "building",
+        id: b.id,
+        x: centerScreen.x,
+        y: centerScreen.y,
+        r: Math.max(24, (b.width + b.height) * cam.zoom * 0.30),
+        depth: centerScreen.depth
+      });
+      clickableRegions.push({
+        kind: "building",
+        id: b.id,
+        x: topPos.x,
+        y: topPos.y,
+        r: Math.max(22, textW * 0.45),
+        depth: centerScreen.depth + 2
+      });
+    }
+
+    function drawCustomMarkers() {
+      if (!DATA.customMarkers) return;
+      for (const m of DATA.customMarkers) {
+        const p = project3D(m.x, 0.3, m.z);
+        const top = project3D(m.x, 2.2, m.z);
+        ctx.save();
+        ctx.strokeStyle = "#c084fc";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+        ctx.lineTo(top.x, top.y);
+        ctx.stroke();
+
+        ctx.font = "800 11.5px 'Segoe UI', sans-serif";
+        const txt = "📌 " + m.text;
+        const tw = ctx.measureText(txt).width + 12;
+        ctx.fillStyle = "#581c87";
+        ctx.strokeStyle = "#e9d5ff";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.roundRect(top.x - tw / 2, top.y - 10, tw, 20, 6);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = "#fde047";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(txt, top.x, top.y);
+        ctx.restore();
+      }
+    }
+
+    function drawCharacterAn() {
+      const x = playerAn.x, z = playerAn.z;
+      const foot = project3D(x, 0.05, z);
+      ctx.save();
+      ctx.fillStyle = "rgba(16, 185, 129, 0.45)";
+      ctx.beginPath();
+      ctx.ellipse(foot.x, foot.y, 10, 5, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      drawBox3D(x, 0, z, 0.42, 0.85, 0.32, "#d6c7b2", "#bfa98e", "#0f172a");
+      drawBox3D(x, 0.85, z, 0.46, 0.53, 0.34, "#4d5d3b", "#fef3c7", "#0f172a");
+      drawBox3D(x, 1.38, z, 0.32, 0.27, 0.32, "#fde68a", "#171717", "#0f172a");
+
+      const headTop = project3D(x, 2.15, z);
+      ctx.font = "800 11px 'Segoe UI', sans-serif";
+      const txt = "🧍‍♀️ AN (1.65m)";
+      const tw = ctx.measureText(txt).width + 10;
+      ctx.fillStyle = "#059669";
+      ctx.strokeStyle = "#a7f3d0";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.roundRect(headTop.x - tw / 2, headTop.y - 9, tw, 18, 999);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "#fff";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(txt, headTop.x, headTop.y);
+      ctx.restore();
+    }
+
+    function renderLoop() {
+      const w = canvas.width / window.devicePixelRatio;
+      const h = canvas.height / window.devicePixelRatio;
+
+      let moveX = 0, moveZ = 0;
+      if (keys["KeyW"] || keys["ArrowUp"]) moveZ -= 1;
+      if (keys["KeyS"] || keys["ArrowDown"]) moveZ += 1;
+      if (keys["KeyA"] || keys["ArrowLeft"]) moveX -= 1;
+      if (keys["KeyD"] || keys["ArrowRight"]) moveX += 1;
+
+      if (moveX !== 0 || moveZ !== 0) {
+        const speed = 0.25;
+        const cosY = Math.cos(-cam.yaw);
+        const sinY = Math.sin(-cam.yaw);
+        playerAn.x += (moveX * cosY - moveZ * sinY) * speed;
+        playerAn.z += (moveX * sinY + moveZ * cosY) * speed;
+        if (cam.preset === "follow") {
+          cam.targetX = playerAn.x;
+          cam.targetZ = playerAn.z;
+        }
+      }
+
+      if (animCam) {
+        animCam.t += 0.08;
+        const k = Math.min(1, animCam.t);
+        const ease = 1 - Math.pow(1 - k, 3);
+        cam.targetX = animCam.startX + (animCam.endX - animCam.startX) * ease;
+        cam.targetZ = animCam.startZ + (animCam.endZ - animCam.startZ) * ease;
+        cam.yaw = animCam.startYaw + (animCam.endYaw - animCam.startYaw) * ease;
+        cam.pitch = animCam.startPitch + (animCam.endPitch - animCam.startPitch) * ease;
+        cam.zoom = animCam.startZoom + (animCam.endZoom - animCam.startZoom) * ease;
+        if (k >= 1) animCam = null;
+      }
+
+      const mode = TIME_MODES[timeOfDayIndex];
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, h);
+      skyGrad.addColorStop(0, mode.bgTop);
+      skyGrad.addColorStop(1, mode.bgBottom);
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, w, h);
+
+      clickableRegions = [];
+
+      drawGroundZonesAndRoads();
+
+      const renderItems = [];
+      for (const b of DATA.buildings) {
+        const p = project3D(b.x, b.height * 0.5, b.z);
+        renderItems.push({ kind: "building", depth: p.depth, data: b });
+      }
+      const anPos = project3D(playerAn.x, 0.8, playerAn.z);
+      renderItems.push({ kind: "an", depth: anPos.depth });
+
+      renderItems.sort((a, b) => a.depth - b.depth);
+
+      for (const item of renderItems) {
+        if (item.kind === "building") drawBuildingDetailed(item.data);
+        else if (item.kind === "an") drawCharacterAn();
+      }
+
+      drawCustomMarkers();
+
+      ctx.fillStyle = mode.warmTint;
+      ctx.fillRect(0, 0, w, h);
+
+      requestAnimationFrame(renderLoop);
+    }
+
+    // ==================== SỰ KIỆN CHUỘT ====================
+    let isDragging = false;
+    let dragButton = 0;
+    let dragStartX = 0, dragStartY = 0;
+    let movedDistance = 0;
+
+    function hitTestScreen(mx, my) {
+      const sorted = [...clickableRegions].sort((a, b) => b.depth - a.depth);
+      for (const reg of sorted) {
+        if (Math.hypot(mx - reg.x, my - reg.y) <= reg.r) {
+          return reg;
+        }
+      }
+      return null;
+    }
+
+    canvas.addEventListener("mousedown", e => {
+      const rect = canvas.getBoundingClientRect();
+      const mx = e.clientX - rect.left;
+      const my = e.clientY - rect.top;
+
+      if (pinLabelMode && e.button === 0) {
+        const g = screenToGround(mx, my);
+        const text = prompt(`Nhập CHỮ GHI CHÚ tại tọa độ (${g.x}m, ${g.z}m):`, "Ghi chú xây dựng...");
+        if (text && text.trim()) {
+          DATA.customMarkers = DATA.customMarkers || [];
+          DATA.customMarkers.push({ id: "m_" + Date.now(), x: g.x, z: g.z, text: text.trim() });
+          saveMapData();
+          showToast("Đã ghim chữ lên bản đồ: " + text.trim());
+        }
+        togglePinLabelMode();
+        return;
+      }
+
+      isDragging = true;
+      dragButton = e.button;
+      dragStartX = e.clientX;
+      dragStartY = e.clientY;
+      movedDistance = 0;
+      animCam = null;
+
+      if (moveDragMode && e.button === 0) {
+        const hit = hitTestScreen(mx, my);
+        if (hit) {
+          selectItem(hit.kind, hit.id, false);
+          isDraggingObject = true;
+        }
+      }
+    });
+
+    window.addEventListener("mousemove", e => {
+      if (!isDragging) return;
+      const dx = e.clientX - dragStartX;
+      const dy = e.clientY - dragStartY;
+      movedDistance += Math.abs(dx) + Math.abs(dy);
+      dragStartX = e.clientX;
+      dragStartY = e.clientY;
+
+      if (isDraggingObject && moveDragMode) {
+        const obj = getSelectedObject();
+        if (obj) {
+          const rect = canvas.getBoundingClientRect();
+          const g = screenToGround(e.clientX - rect.left, e.clientY - rect.top);
+          obj.x = g.x;
+          obj.z = g.z;
+          saveMapData();
+          updateInspector();
+        }
+        return;
+      }
+
+      if (dragButton === 2 || e.shiftKey) {
+        const panScale = 1 / cam.zoom;
+        const cosY = Math.cos(-cam.yaw);
+        const sinY = Math.sin(-cam.yaw);
+        const mx = -dx * panScale;
+        const mz = -dy * panScale / Math.max(0.35, Math.sin(cam.pitch));
+        cam.targetX += mx * cosY - mz * sinY;
+        cam.targetZ += mx * sinY + mz * cosY;
+      } else {
+        cam.yaw += dx * 0.0065;
+        cam.pitch = Math.max(0.25, Math.min(1.52, cam.pitch + dy * 0.0055));
+      }
+    });
+
+    window.addEventListener("mouseup", e => {
+      if (!isDragging) return;
+      isDragging = false;
+      isDraggingObject = false;
+
+      if (movedDistance < 6 && dragButton === 0) {
+        const rect = canvas.getBoundingClientRect();
+        const hit = hitTestScreen(e.clientX - rect.left, e.clientY - rect.top);
+        if (hit) {
+          selectItem(hit.kind, hit.id, false);
+        }
+      }
+    });
+
+    canvas.addEventListener("dblclick", e => {
+      const rect = canvas.getBoundingClientRect();
+      const hit = hitTestScreen(e.clientX - rect.left, e.clientY - rect.top);
+      if (hit) {
+        selectItem(hit.kind, hit.id, false);
+        promptQuickRename();
+      }
+    });
+
+    canvas.addEventListener("contextmenu", e => e.preventDefault());
+
+    canvas.addEventListener("wheel", e => {
+      e.preventDefault();
+      animCam = null;
+      const factor = e.deltaY < 0 ? 1.12 : 0.9;
+      cam.zoom = Math.max(5.0, Math.min(32.0, cam.zoom * factor));
+    }, { passive: false });
+
+    window.addEventListener("keydown", e => {
+      if (document.activeElement && (document.activeElement.tagName === "INPUT" || document.activeElement.tagName === "TEXTAREA")) return;
+      keys[e.code] = true;
+    });
+    window.addEventListener("keyup", e => {
+      keys[e.code] = false;
+    });
+
+    resizeCanvas();
+    renderLeftList();
+    updateInspector();
+    requestAnimationFrame(renderLoop);
+  </script>
+</body>
+</html>

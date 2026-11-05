@@ -662,6 +662,9 @@
       <button class="btn" id="btnCamTopDown" onclick="setCameraPreset('topdown')">🗺️ Sơ Đồ Phẳng</button>
       <button class="btn" id="btnCamFollowAn" onclick="setCameraPreset('follow')">🚶‍♀️ Đi cùng An (WASD)</button>
       <span style="color:#475569">|</span>
+      <button class="btn" id="btnUndo" onclick="undoAction()" title="Hoàn tác bước vừa làm (Ctrl + Z)">↩️ Hoàn tác (Ctrl+Z)</button>
+      <button class="btn" id="btnRedo" onclick="redoAction()" title="Làm lại bước vừa hoàn tác (Ctrl + Y)">↪️ Làm lại</button>
+      <span style="color:#475569">|</span>
       <button class="btn" id="btnMoveMode" onclick="toggleMoveDragMode()">✋ Kéo Ô: <span id="moveModeState">TẮT</span></button>
       <button class="btn purple" id="btnAddMarkerMode" onclick="togglePinLabelMode()">🏷️ Ghim Chữ</button>
       <button class="btn primary" onclick="addNewCustomBuilding()">➕ Thêm Nhà</button>
@@ -929,6 +932,80 @@
 
     let DATA = loadMapData();
 
+    // ==================== HỆ THỐNG LỊCH SỬ HOÀN TÁC (CTRL + Z / CTRL + Y) ====================
+    const MAX_HISTORY = 60;
+    let undoStack = [];
+    let redoStack = [];
+    let inputEditSessionActive = false;
+
+    function createSnapshot(label = "") {
+      return {
+        label,
+        dataJson: JSON.stringify(DATA),
+        selectedKind,
+        selectedId
+      };
+    }
+
+    function pushHistorySnapshot(label = "Thao tác") {
+      const snap = createSnapshot(label);
+      if (undoStack.length > 0 && undoStack[undoStack.length - 1].dataJson === snap.dataJson) {
+        return;
+      }
+      undoStack.push(snap);
+      if (undoStack.length > MAX_HISTORY) undoStack.shift();
+      redoStack = [];
+      updateUndoRedoButtons();
+    }
+
+    function updateUndoRedoButtons() {
+      const uBtn = document.getElementById("btnUndo");
+      const rBtn = document.getElementById("btnRedo");
+      if (uBtn) {
+        uBtn.style.opacity = undoStack.length > 0 ? "1" : "0.45";
+        uBtn.textContent = undoStack.length > 0 ? `↩️ Hoàn tác (${undoStack.length})` : "↩️ Hoàn tác (Ctrl+Z)";
+      }
+      if (rBtn) {
+        rBtn.style.opacity = redoStack.length > 0 ? "1" : "0.45";
+      }
+    }
+
+    function undoAction() {
+      inputEditSessionActive = false;
+      if (undoStack.length === 0) {
+        showToast("⚠️ Đã ở giai đoạn ban đầu (Không còn bước nào để Ctrl+Z)!");
+        return;
+      }
+      redoStack.push(createSnapshot("Redo"));
+      const prev = undoStack.pop();
+      DATA = JSON.parse(prev.dataJson);
+      selectedKind = prev.selectedKind || "building";
+      selectedId = prev.selectedId || (DATA.buildings[0] && DATA.buildings[0].id);
+      saveMapData();
+      renderLeftList();
+      updateInspector();
+      updateUndoRedoButtons();
+      showToast(`↩️ Đã hoàn tác (Ctrl+Z): Quay lại trước "${prev.label}"`);
+    }
+
+    function redoAction() {
+      inputEditSessionActive = false;
+      if (redoStack.length === 0) {
+        showToast("⚠️ Không có bước nào để Làm lại (Ctrl+Y)!");
+        return;
+      }
+      undoStack.push(createSnapshot("Undo"));
+      const next = redoStack.pop();
+      DATA = JSON.parse(next.dataJson);
+      selectedKind = next.selectedKind || "building";
+      selectedId = next.selectedId || (DATA.buildings[0] && DATA.buildings[0].id);
+      saveMapData();
+      renderLeftList();
+      updateInspector();
+      updateUndoRedoButtons();
+      showToast("↪️ Đã làm lại (Ctrl+Y)!");
+    }
+
     function saveMapData() {
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(DATA));
@@ -937,13 +1014,14 @@
 
     function resetToDefaultMap() {
       if (!confirm("Khôi phục bản đồ quy hoạch Chương 1 (gồm 9 tuyến đường và 16 công trình) về mặc định?")) return;
+      pushHistorySnapshot("Khôi phục mặc định");
       DATA = JSON.parse(JSON.stringify(window.DEFAULT_GAME_MAP_DATA));
       saveMapData();
       selectedKind = "building";
       selectedId = DATA.buildings[0].id;
       renderLeftList();
       updateInspector();
-      showToast("Đã khôi phục bản đồ gốc!");
+      showToast("Đã khôi phục bản đồ gốc! (Bấm Ctrl+Z nếu muốn quay lại)");
     }
 
     // ==================== THU NHỎ / MỞ RỘNG CÁC BẢNG CHIẾM DIỆN TÍCH ====================
@@ -1116,6 +1194,7 @@
     }
 
     function selectItem(kind, id, flyTo = false) {
+      inputEditSessionActive = false;
       selectedKind = kind;
       selectedId = id;
       renderLeftList();
@@ -1269,6 +1348,11 @@ ${howBullets}
       const obj = getSelectedObject();
       if (!obj) return;
 
+      if (!inputEditSessionActive) {
+        pushHistorySnapshot("Chỉnh sửa thông số ô");
+        inputEditSessionActive = true;
+      }
+
       const lotText = document.getElementById("inputLotLabel").value;
       const nameText = document.getElementById("inputName").value;
       const signText = document.getElementById("inputSign").value;
@@ -1309,6 +1393,8 @@ ${howBullets}
     function quickResizeSelected(dw, dd, dh) {
       const obj = getSelectedObject();
       if (!obj) return;
+      inputEditSessionActive = false;
+      pushHistorySnapshot("Mở rộng / thu nhỏ kích thước");
       obj.width = Math.max(1.5, Math.round((obj.width + dw) * 10) / 10);
       obj.depth = Math.max(1.5, Math.round((obj.depth + dd) * 10) / 10);
       if (selectedKind === "building" && dh !== 0) {
@@ -1326,6 +1412,8 @@ ${howBullets}
       const currentLabel = selectedKind === "building" ? (obj.lotLabel || obj.name) : obj.name;
       const newLabel = prompt("Nhập CHỮ TÊN Ô ĐẤT (để ghi nhớ xây nhà gì ở ô này):", currentLabel);
       if (newLabel !== null && newLabel.trim() !== "") {
+        inputEditSessionActive = false;
+        pushHistorySnapshot("Đổi chữ tên ô");
         if (selectedKind === "building") {
           obj.lotLabel = newLabel.trim();
           obj.signText = newLabel.trim();
@@ -1344,6 +1432,9 @@ ${howBullets}
       const customLabel = prompt("Nhập TÊN Ô NHÀ MỚI bạn muốn xây (VD: TIỆM SỬA XE, QUÁN BÚN RIÊU...):", "NHÀ MỚI #" + idx);
       if (customLabel === null) return;
       const labelClean = customLabel.trim() || ("NHÀ MỚI #" + idx);
+
+      inputEditSessionActive = false;
+      pushHistorySnapshot("Thêm ô nhà mới");
 
       const targetZoneId = currentZoneFilter === "ALL" ? "zone_boarding_house" : currentZoneFilter;
       const zone = DATA.zones.find(z => z.id === targetZoneId) || DATA.zones[1];
@@ -1382,6 +1473,8 @@ ${howBullets}
       const idx = DATA.roads.length + 1;
       const roadName = prompt("Nhập TÊN CON ĐƯỜNG / HẺM MỚI (VD: HẺM NHÁNH 2, ĐƯỜNG NỐI...):", "ĐƯỜNG MỚI #" + idx);
       if (roadName === null) return;
+      inputEditSessionActive = false;
+      pushHistorySnapshot("Thêm tuyến đường mới");
       const newR = {
         id: "road_custom_" + Date.now(),
         code: "ĐƯỜNG #" + idx,
@@ -1405,6 +1498,8 @@ ${howBullets}
     function duplicateSelectedItem() {
       const obj = getSelectedObject();
       if (!obj) return;
+      inputEditSessionActive = false;
+      pushHistorySnapshot("Nhân bản ô");
       const copy = JSON.parse(JSON.stringify(obj));
       copy.id = selectedKind + "_copy_" + Date.now();
       copy.x = Math.round((obj.x + obj.width * 0.6) * 2) / 2;
@@ -1433,6 +1528,8 @@ ${howBullets}
       const obj = getSelectedObject();
       if (!obj) return;
       if (!confirm(`Xóa "${obj.lotLabel || obj.name}"?`)) return;
+      inputEditSessionActive = false;
+      pushHistorySnapshot("Xóa ô");
       if (selectedKind === "building") {
         DATA.buildings = DATA.buildings.filter(b => b.id !== selectedId);
         if (DATA.buildings.length) selectItem("building", DATA.buildings[0].id, false);
@@ -2009,6 +2106,8 @@ ${howBullets}
         const g = screenToGround(mx, my);
         const text = prompt(`Nhập CHỮ GHI CHÚ tại tọa độ (${g.x}m, ${g.z}m):`, "Ghi chú xây dựng...");
         if (text && text.trim()) {
+          inputEditSessionActive = false;
+          pushHistorySnapshot("Ghim chữ lên đất");
           DATA.customMarkers = DATA.customMarkers || [];
           DATA.customMarkers.push({ id: "m_" + Date.now(), x: g.x, z: g.z, text: text.trim() });
           saveMapData();
@@ -2029,6 +2128,7 @@ ${howBullets}
         const hit = hitTestScreen(mx, my);
         if (hit) {
           selectItem(hit.kind, hit.id, false);
+          pushHistorySnapshot("Kéo di chuyển ô");
           isDraggingObject = true;
         }
       }
@@ -2102,6 +2202,22 @@ ${howBullets}
     }, { passive: false });
 
     window.addEventListener("keydown", e => {
+      // Phím tắt Ctrl+Z (Hoàn tác) và Ctrl+Y / Ctrl+Shift+Z (Làm lại) hoạt động mọi lúc
+      if ((e.ctrlKey || e.metaKey) && e.code === "KeyZ") {
+        e.preventDefault();
+        if (e.shiftKey) {
+          redoAction();
+        } else {
+          undoAction();
+        }
+        return;
+      }
+      if ((e.ctrlKey || e.metaKey) && e.code === "KeyY") {
+        e.preventDefault();
+        redoAction();
+        return;
+      }
+
       if (document.activeElement && (document.activeElement.tagName === "INPUT" || document.activeElement.tagName === "TEXTAREA")) return;
       keys[e.code] = true;
     });
@@ -2109,9 +2225,16 @@ ${howBullets}
       keys[e.code] = false;
     });
 
+    // Khi rời khỏi ô input thì đóng phiên chỉnh sửa để lần sửa tiếp theo tạo mốc Ctrl+Z mới
+    document.querySelectorAll("input").forEach(inp => {
+      inp.addEventListener("blur", () => { inputEditSessionActive = false; });
+      inp.addEventListener("change", () => { inputEditSessionActive = false; });
+    });
+
     resizeCanvas();
     renderLeftList();
     updateInspector();
+    updateUndoRedoButtons();
     requestAnimationFrame(renderLoop);
   </script>
 </body>
